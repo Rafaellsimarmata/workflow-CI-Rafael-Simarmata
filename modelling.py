@@ -18,17 +18,14 @@ from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 import xgboost as xgb
 
-# import dagshub
+import dagshub
+dagshub.init(repo_owner='rafaellsimarmata',
+             repo_name='workflow-CI-Rafael-Simarmata',
+             mlflow=True)
 
-# dagshub.init(
-#     repo_owner="Rafaellsimarmata",
-#     repo_name="workflow-CI-Rafael-Simarmata",
-#     url="https://dagshub.com/Rafaellsimarmata/workflow-CI-Rafael-Simarmata"
-#     mlflow=True
-# )
-
-# os.environ['MLFLOW_TRACKING_USERNAME'] = os.getenv('MLFLOW_TRACKING_USERNAME')
-# os.environ['MLFLOW_TRACKING_PASSWORD'] = os.getenv('MLFLOW_TRACKING_PASSWORD')
+with mlflow.start_run():
+  mlflow.log_param('parameter name', 'value')
+  mlflow.log_metric('metric name', 1)
 
 from dotenv import load_dotenv
 load_dotenv()

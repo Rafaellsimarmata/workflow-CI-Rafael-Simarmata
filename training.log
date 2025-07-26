@@ -1328,3 +1328,8 @@ mlflow.exceptions.MlflowException: API request to https://dagshub.com/Rafaellsim
 2025-07-26 21:30:35 modelling.py [INFO] MLflow setup completed
 2025-07-26 21:30:35 modelling.py [INFO] Loading data from: fraud_detection_processed.csv
 2025-07-26 21:30:35 modelling.py [INFO] Data loaded and split. Train: (1212, 9), Test: (304, 9)
+2025-07-26 21:38:28 modelling.py [INFO] Loaded .env file from: True
+2025-07-26 21:38:28 modelling.py [INFO] Setting tracking URI to: http://localhost:5000
+2025-07-26 21:38:28 modelling.py [INFO] MLflow setup completed
+2025-07-26 21:38:28 modelling.py [INFO] Loading data from: fraud_detection_processed.csv
+2025-07-26 21:38:28 modelling.py [INFO] Data loaded and split. Train: (1212, 9), Test: (304, 9)
