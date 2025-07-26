@@ -18,8 +18,17 @@ from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 import xgboost as xgb
 
-import dagshub
-dagshub.init(repo_owner='Rafaellsimarmata', repo_name='workflow-CI-Rafael-Simarmata', mlflow=True)
+# import dagshub
+
+# dagshub.init(
+#     repo_owner="Rafaellsimarmata",
+#     repo_name="workflow-CI-Rafael-Simarmata",
+#     url="https://dagshub.com/Rafaellsimarmata/workflow-CI-Rafael-Simarmata"
+#     mlflow=True
+# )
+
+# os.environ['MLFLOW_TRACKING_USERNAME'] = os.getenv('MLFLOW_TRACKING_USERNAME')
+# os.environ['MLFLOW_TRACKING_PASSWORD'] = os.getenv('MLFLOW_TRACKING_PASSWORD')
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -45,6 +54,11 @@ def mlflow_setup():
     try:
         if mlflow_tracking_uri:
             mlflow.set_tracking_uri('https://dagshub.com/Rafaellsimarmata/workflow-CI-Rafael-Simarmata.mlflow')
+
+            # Verify connection
+            # client = mlflow.tracking.MlflowClient()
+            # client.get_experiment()  # Test API call
+            
             logger.info(f"Setting tracking URI to: {mlflow_tracking_uri}")
         else:
             raise ValueError('MLFLOW_TRACKING_URI must be set in environment')

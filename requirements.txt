@@ -2,7 +2,7 @@ dagshub
 imbalanced-learn
 joblib
 matplotlib
-mlflow==2.9.0
+mlflow==2.22.1
 numpy
 pandas
 python-dotenv
