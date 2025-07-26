@@ -1,0 +1,14 @@
+# python.env.yaml
+name: fraud-pred-env
+python: "3.12.7"
+dependencies:
+  - mlflow==2.19.0
+  - pandas
+  - numpy
+  - scikit-learn
+  - seaborn
+  - matplotlib
+  - dagshub
+  - joblib
+  - python-dotenv
+  - xgboost

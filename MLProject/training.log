@@ -1,0 +1,74 @@
+2025-07-26 12:01:06 modelling.py [INFO] MLflow setup for DagsHub completed.
+2025-07-26 12:01:06 modelling.py [INFO] Loading data from: fraud_detection_processed.csv
+2025-07-26 12:01:06 modelling.py [INFO] Data loaded and split. Train: (1212, 9), Test: (304, 9)
+2025-07-26 12:01:06 modelling.py [ERROR] An error occurred when training model: Cannot start run with ID d4abf271c2014cd5a3033ae2696bdc2c because active run ID does not match environment run ID. Make sure --experiment-name or --experiment-id matches experiment set with set_experiment(), or just use command-line arguments
+Traceback (most recent call last):
+  File "C:\Users\ACER\Documents\USU\Semester6\DBS_Journey\membangun_model_msml\MLProject\modelling.py", line 224, in main
+    run_id, metrics, cv_accuracy = model_train(
+                                   ~~~~~~~~~~~^
+        X_train, X_test, y_train, y_test, model_name, params
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\ACER\Documents\USU\Semester6\DBS_Journey\membangun_model_msml\MLProject\modelling.py", line 93, in model_train
+    with mlflow.start_run(run_name=f'{model_name}_run_ci') as run:
+         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ACER\Documents\USU\Semester6\DBS_Journey\membangun_model_msml\.venv\Lib\site-packages\mlflow\tracking\fluent.py", line 374, in start_run
+    raise MlflowException(
+    ...<4 lines>...
+    )
+mlflow.exceptions.MlflowException: Cannot start run with ID d4abf271c2014cd5a3033ae2696bdc2c because active run ID does not match environment run ID. Make sure --experiment-name or --experiment-id matches experiment set with set_experiment(), or just use command-line arguments
+2025-07-26 13:50:32 modelling.py [INFO] MLflow setup for DagsHub completed.
+2025-07-26 13:50:32 modelling.py [INFO] Loading data from: fraud_detection_processed.csv
+2025-07-26 13:50:32 modelling.py [INFO] Data loaded and split. Train: (1212, 9), Test: (304, 9)
+2025-07-26 13:50:32 modelling.py [ERROR] An error occurred when training model: Cannot start run with ID 7f56bb9917d147ca9d1a9b0aac64a60b because active run ID does not match environment run ID. Make sure --experiment-name or --experiment-id matches experiment set with set_experiment(), or just use command-line arguments
+Traceback (most recent call last):
+  File "C:\Users\ACER\Documents\USU\Semester6\DBS_Journey\membangun_model_msml\MLProject\modelling.py", line 224, in main
+    run_id, metrics, cv_accuracy = model_train(
+                                   ~~~~~~~~~~~^
+        X_train, X_test, y_train, y_test, model_name, params
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\ACER\Documents\USU\Semester6\DBS_Journey\membangun_model_msml\MLProject\modelling.py", line 93, in model_train
+    with mlflow.start_run(run_name=f'{model_name}_run_ci') as run:
+         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ACER\Documents\USU\Semester6\DBS_Journey\membangun_model_msml\.venv\Lib\site-packages\mlflow\tracking\fluent.py", line 374, in start_run
+    raise MlflowException(
+    ...<4 lines>...
+    )
+mlflow.exceptions.MlflowException: Cannot start run with ID 7f56bb9917d147ca9d1a9b0aac64a60b because active run ID does not match environment run ID. Make sure --experiment-name or --experiment-id matches experiment set with set_experiment(), or just use command-line arguments
+2025-07-26 13:53:16 modelling.py [INFO] MLflow setup for DagsHub completed.
+2025-07-26 13:53:16 modelling.py [INFO] Loading data from: fraud_detection_processed.csv
+2025-07-26 13:53:16 modelling.py [INFO] Data loaded and split. Train: (1212, 9), Test: (304, 9)
+2025-07-26 13:53:18 modelling.py [INFO] Model training started: rf. Parameters: {'n_estimators': 100, 'max_depth': 10}
+2025-07-26 13:53:41 modelling.py [INFO] Model training completed.
+2025-07-26 13:53:41 modelling.py [INFO] Model RandomForestClassifier(max_depth=10, random_state=42) evaluated. Accuracy: 0.9605.
+2025-07-26 13:54:39 modelling.py [INFO] Cross-validation accuracy: 0.9488
+2025-07-26 13:54:39 modelling.py [INFO] Metrics logged to MLflow.
+2025-07-26 13:54:40 modelling.py [INFO] Confusion matrix logged as CSV and PNG to MLflow.
+2025-07-26 13:54:40 modelling.py [INFO] Feature importance logged to MLflow.
+2025-07-26 13:54:41 modelling.py [INFO] Metrics saved and logged to MLflow.
+2025-07-26 13:54:48 modelling.py [INFO] Model artifact saved and logged to MLflow.
+2025-07-26 13:54:49 modelling.py [INFO] Model rf trained and logged successfully.
+2025-07-26 13:54:49 modelling.py [INFO] Run ID: 3af0e2c9fe234d8f95d77c09632580a0
+2025-07-26 13:54:49 modelling.py [INFO] Accuracy: 0.9605
+2025-07-26 13:54:49 modelling.py [INFO] Cross-validation accuracy: 0.9488
+2025-07-26 13:54:49 modelling.py [INFO] Run ID saved to file.
+2025-07-26 15:14:25 modelling.py [INFO] MLflow setup for DagsHub completed.
+2025-07-26 15:14:25 modelling.py [INFO] Loading data from: fraud_detection_processed.csv
+2025-07-26 15:14:25 modelling.py [INFO] Data loaded and split. Train: (1212, 9), Test: (304, 9)
+2025-07-26 15:14:27 modelling.py [INFO] Model training started: rf. Parameters: {'n_estimators': 100, 'max_depth': 10}
+2025-07-26 15:14:47 modelling.py [INFO] Model training completed.
+2025-07-26 15:14:47 modelling.py [INFO] Model RandomForestClassifier(max_depth=10, random_state=42) evaluated. Accuracy: 0.9605.
+2025-07-26 15:15:38 modelling.py [INFO] Cross-validation accuracy: 0.9488
+2025-07-26 15:15:38 modelling.py [INFO] Metrics logged to MLflow.
+2025-07-26 15:15:39 modelling.py [INFO] Confusion matrix logged as CSV and PNG to MLflow.
+2025-07-26 15:15:40 modelling.py [INFO] Feature importance logged to MLflow.
+2025-07-26 15:15:40 modelling.py [INFO] Metrics saved and logged to MLflow.
+2025-07-26 15:15:48 modelling.py [INFO] Model artifact saved and logged to MLflow.
+2025-07-26 15:15:48 modelling.py [INFO] Model rf trained and logged successfully.
+2025-07-26 15:15:48 modelling.py [INFO] Run ID: 9bdc7c1c3b7647aa92e4fafbef6e156e
+2025-07-26 15:15:48 modelling.py [INFO] Accuracy: 0.9605
+2025-07-26 15:15:48 modelling.py [INFO] Cross-validation accuracy: 0.9488
+2025-07-26 15:15:48 modelling.py [INFO] Run ID saved to file.
