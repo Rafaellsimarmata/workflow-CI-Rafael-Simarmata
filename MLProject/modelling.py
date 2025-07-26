@@ -18,11 +18,11 @@ from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 import xgboost as xgb
 
+import dagshub
+dagshub.init(repo_owner='Rafaellsimarmata', repo_name='workflow-CI-Rafael-Simarmata', mlflow=True)
+
 from dotenv import load_dotenv
-
 load_dotenv()
-
-mlflow_tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,19 +36,24 @@ logging.basicConfig(
 
 logger = logging.getLogger('modelling.py')
 
+env_path = load_dotenv()
+logger.info(f"Loaded .env file from: {env_path}")
+
+mlflow_tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
+
 def mlflow_setup():
     try:
         if mlflow_tracking_uri:
-            mlflow.set_tracking_uri(mlflow_tracking_uri)
+            mlflow.set_tracking_uri('https://dagshub.com/Rafaellsimarmata/workflow-CI-Rafael-Simarmata.mlflow')
+            logger.info(f"Setting tracking URI to: {mlflow_tracking_uri}")
         else:
-            raise ValueError('DagsHub MLflow Tracking URI must set on the environment.')
+            raise ValueError('MLFLOW_TRACKING_URI must be set in environment')
         
-        logger.info('MLflow setup for DagsHub completed.')
-        
+        logger.info('MLflow setup completed')
     except Exception as e:
-        logger.exception(f'MLflow setup for DagsHub failed: {e}.')
+        logger.exception(f'MLflow setup failed: {e}')
         mlflow.set_tracking_uri('http://127.0.0.1:5000')
-        logger.info('MLflow setup locally completed.')
+        logger.info('Falling back to local MLflow tracking')
 
 def load_data(data_path):
     logger.info(f'Loading data from: {data_path}')

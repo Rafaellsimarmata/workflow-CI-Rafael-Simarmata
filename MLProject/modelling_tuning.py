@@ -18,6 +18,9 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 
+import dagshub
+dagshub.init(repo_owner='Rafaellsimarmata', repo_name='workflow-CI-Rafael-Simarmata', mlflow=True)
+
 from dotenv import load_dotenv
 load_dotenv()
 
