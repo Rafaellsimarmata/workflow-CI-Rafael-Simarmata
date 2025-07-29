@@ -1,4 +1,4 @@
-name: Diabetes Prediction CI/CD
+name: Fraud Detection CI/CD
 
 on:
   # Trigger when there is a change or push to the main branch
