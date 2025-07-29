@@ -12,6 +12,8 @@ on:
 
 env:
   MLFLOW_TRACKING_URL: ${{secrets.MLFLOW_TRACKING_URL}}
+  DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+  DAGSHUB_PASSWORD: ${{ secrets.DAGSHUB_PASSWORD }} 
 
 jobs:
   build:
