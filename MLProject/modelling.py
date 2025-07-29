@@ -18,17 +18,10 @@ from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 import xgboost as xgb
 
-import dagshub
-dagshub.init(repo_owner='rafaellsimarmata',
-             repo_name='workflow-CI-Rafael-Simarmata',
-             mlflow=True)
-
-with mlflow.start_run():
-  mlflow.log_param('parameter name', 'value')
-  mlflow.log_metric('metric name', 1)
-
 from dotenv import load_dotenv
 load_dotenv()
+
+mlflow_tracking_uri = os.getenv('MLFLOW_TRACKING_URL')
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,29 +35,19 @@ logging.basicConfig(
 
 logger = logging.getLogger('modelling.py')
 
-env_path = load_dotenv()
-logger.info(f"Loaded .env file from: {env_path}")
-
-mlflow_tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
-
 def mlflow_setup():
     try:
         if mlflow_tracking_uri:
-            mlflow.set_tracking_uri('https://dagshub.com/Rafaellsimarmata/workflow-CI-Rafael-Simarmata.mlflow')
-
-            # Verify connection
-            # client = mlflow.tracking.MlflowClient()
-            # client.get_experiment()  # Test API call
-            
-            logger.info(f"Setting tracking URI to: {mlflow_tracking_uri}")
+            mlflow.set_tracking_uri(mlflow_tracking_uri)
         else:
-            raise ValueError('MLFLOW_TRACKING_URI must be set in environment')
+            raise ValueError('DagsHub MLflow Tracking URI must set on the environment.')
         
-        logger.info('MLflow setup completed')
+        logger.info(f'MLflow setup for DagsHub {mlflow_tracking_uri} completed.')
+        
     except Exception as e:
-        logger.exception(f'MLflow setup failed: {e}')
+        logger.exception(f'MLflow setup for DagsHub failed: {e}.')
         mlflow.set_tracking_uri('http://127.0.0.1:5000')
-        logger.info('Falling back to local MLflow tracking')
+        logger.info('MLflow setup locally completed.')
 
 def load_data(data_path):
     logger.info(f'Loading data from: {data_path}')
@@ -98,7 +81,7 @@ def model_evaluate(model, X_test, y_test):
         'cm_true_positive': tp,
     }
 
-    logger.info(f'Model {model} evaluated. Accuracy: {metrics['accuracy']:.4f}.')
+    logger.info(f"Model {model} evaluated. Accuracy: {metrics['accuracy']:.4f}.")
 
     return metrics, cm
 
@@ -154,8 +137,10 @@ def model_train(X_train, X_test, y_train, y_test, model_name, params=None):
         cm_plot_path = f'models/{model_name}_confusion_matrix.png'
         os.makedirs(os.path.dirname(cm_plot_path), exist_ok=True)
         plt.savefig(cm_plot_path)
+
         mlflow.log_artifact(cm_plot_path)
         plt.close()
+
         logger.info('Confusion matrix logged as CSV and PNG to MLflow.')
 
         if hasattr(model, 'feature_importances_'):
@@ -241,7 +226,7 @@ def main(args):
 
             logger.info(f'Model {model_name} trained and logged successfully.')
             logger.info(f'Run ID: {run_id}')
-            logger.info(f'Accuracy: {metrics['accuracy']:.4f}')
+            logger.info(f"Accuracy: {metrics['accuracy']:.4f}")
             logger.info(f'Cross-validation accuracy: {cv_accuracy:.4f}')
 
             run_id_path = 'models/model_run_id.txt'
@@ -264,9 +249,11 @@ if __name__ == '__main__':
         help='Path to the processed data file.')
     
     group = parser.add_mutually_exclusive_group(required=True)
+
     group.add_argument(
         '-m', '--model_name', type=str, choices=['xgb', 'rf', 'adaboost'],
         help='Name of the model to train. If specified, tuning must not be enabled.')
+    
     group.add_argument(
         '-t', '--tuning', action='store_true',
         help='Enable hyperparameter tuning. If used, model name must not be specified.')

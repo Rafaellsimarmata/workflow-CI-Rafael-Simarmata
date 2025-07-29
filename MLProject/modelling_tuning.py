@@ -89,7 +89,7 @@ def model_evaluate(model, X_test, y_test):
         'fpr': fp / (fp + tn) if (fp + tn) != 0 else 0, # AKA fall-out; How well the model fails to identifies non-fraud as fraud (track overdiagnose fraud)
     }
 
-    logger.info(f'Model {model} evaluated. Accuracy: {metrics['accuracy']:.4f}.')
+    logger.info(f"Model {model} evaluated. Accuracy: {metrics['accuracy']:.4f}.")
 
     return metrics, cm
 
@@ -123,7 +123,7 @@ def xgboost_model_tuning(X_train, X_test, y_train, y_test):
     best_model.fit(X_train, y_train)
 
     metrics, cm = model_evaluate(best_model, X_test, y_test)
-    logger.info(f'Xgboost model accuracy: {metrics['accuracy']:.4f}')
+    logger.info(f"Xgboost model accuracy: {metrics['accuracy']:.4f}")
 
     with mlflow.start_run(run_name='xgb_tuned_run_ci') as run:
         for param, value in best_params.items():
@@ -220,7 +220,7 @@ def rf_model_tuning(X_train, X_test, y_train, y_test):
     best_model.fit(X_train, y_train)
 
     metrics, cm = model_evaluate(best_model, X_test, y_test)
-    logger.info(f'Random Forest model accuracy: {metrics['accuracy']:.4f}')
+    logger.info(f"Random Forest model accuracy: {metrics['accuracy']:.4f}")
 
     with mlflow.start_run(run_name='rf_tuned_run_ci') as run:
         for param, value in best_params.items():
@@ -318,7 +318,7 @@ def adaboost_model_tuning(X_train, X_test, y_train, y_test):
     best_model.fit(X_train, y_train)
 
     metrics, cm = model_evaluate(best_model, X_test, y_test)
-    logger.info(f'AdaBoost model accuracy: {metrics['accuracy']:.4f}')
+    logger.info(f"AdaBoost model accuracy: {metrics['accuracy']:.4f}")
 
     with mlflow.start_run(run_name='adaboost_tuned_run_ci') as run:
         for param, value in best_params.items():
@@ -432,9 +432,9 @@ def main():
         )
         best_model_info = results[best_model_name]
 
-        logger.info(f'Best model: {best_model_name}')
-        logger.info(f'Accuracy: {best_model_info['metrics']['accuracy']:.4f}')
-        logger.info(f'Run ID: {best_model_info['run_id']}')
+        # logger.info(f'Best model: {best_model_name}')
+        # logger.info(f"Accuracy: {best_model_info['metrics']['accuracy']:.4f}")
+        # logger.info(f'Run ID: {best_model_info['run_id']}')
 
         run_id_path = 'models_tuned/best_tuned_model_run_id.txt'
         os.makedirs(os.path.dirname(run_id_path), exist_ok=True)

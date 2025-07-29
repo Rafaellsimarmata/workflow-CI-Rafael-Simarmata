@@ -1,4 +1,2 @@
-.venv
 .env
-mlartifacts
-mlruns
+.venv
