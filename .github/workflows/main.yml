@@ -11,7 +11,7 @@ on:
   workflow_dispatch:  # Trigger manually via GitHub Actions UI
 
 env:
-  MLFLOW_TRACKING_URI: ${{secrets.MLFLOW_TRACKING_UR}}
+  MLFLOW_TRACKING_URI: ${{secrets.MLFLOW_TRACKING_URL}}
 
 jobs:
   build:
