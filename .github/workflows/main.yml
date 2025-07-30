@@ -71,7 +71,7 @@ jobs:
         env:
           DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-          MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URL }}
         run: |
           echo "Using RUN_ID=${{ env.RUN_ID }}"
           mlflow models build-docker --model-uri "runs:/$RUN_ID/model" --name "fraud_detection"
