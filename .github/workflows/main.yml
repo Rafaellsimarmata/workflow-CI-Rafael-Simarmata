@@ -84,11 +84,11 @@ jobs:
 
       - name: Tag Docker Image
         run: |
-          docker tag fraud-detection:latest ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:${{ env.RUN_ID }}
-          docker tag fraud-detection:latest ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:latest
+          docker tag fraud_detection_cc:latest ${{ secrets.DOCKER_HUB_USERNAME }}/fraud_detection_cc:${{ env.RUN_ID }}
+          docker tag fraud_detection_cc:latest ${{ secrets.DOCKER_HUB_USERNAME }}/fraud_detection_cc:latest
 
       - name: Push Docker Image
         run: 
         |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:${{ env.RUN_ID }}
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fraud_detection_cc:${{ env.RUN_ID }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fraud_detection_cc:latest
