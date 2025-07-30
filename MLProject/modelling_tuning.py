@@ -18,13 +18,10 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 import xgboost as xgb
 
-import dagshub
-dagshub.init(repo_owner='Rafaellsimarmata', repo_name='workflow-CI-Rafael-Simarmata', mlflow=True)
-
 from dotenv import load_dotenv
 load_dotenv()
 
-mlflow_tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
+mlflow_tracking_uri = os.environ.get('MLFLOW_TRACKING_URL')
 
 logging.basicConfig(
     level=logging.INFO,
@@ -432,9 +429,9 @@ def main():
         )
         best_model_info = results[best_model_name]
 
-        # logger.info(f'Best model: {best_model_name}')
-        # logger.info(f"Accuracy: {best_model_info['metrics']['accuracy']:.4f}")
-        # logger.info(f'Run ID: {best_model_info['run_id']}')
+        logger.info(f'Best model: {best_model_name}')
+        logger.info(f"Accuracy: {best_model_info['metrics']['accuracy']:.4f}")
+        logger.info(f'Run ID: {best_model_info['run_id']}')
 
         run_id_path = 'models_tuned/best_tuned_model_run_id.txt'
         os.makedirs(os.path.dirname(run_id_path), exist_ok=True)
