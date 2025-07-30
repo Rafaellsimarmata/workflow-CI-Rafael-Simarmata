@@ -136,7 +136,7 @@ def xgboost_model_tuning(X_train, X_test, y_train, y_test):
             columns=['Predicted Negative', 'Predicted Positive']
         )
 
-        plt.figure(figrid_searchize=(5, 4))
+        plt.figure(figsize=(5, 4))
         sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
         plt.title('Confusion Matrix for xgb Tuned', fontweight='bold', pad=10)
         plt.xlabel('Actual', fontweight='bold')
@@ -233,7 +233,7 @@ def rf_model_tuning(X_train, X_test, y_train, y_test):
             columns=['Predicted Negative', 'Predicted Positive']
         )
 
-        plt.figure(figrid_searchize=(5, 4))
+        plt.figure(figsize=(5, 4))
         sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
         plt.title('Confusion Matrix for rf Tuned', fontweight='bold', pad=10)
         plt.xlabel('Actual', fontweight='bold')
@@ -331,7 +331,7 @@ def adaboost_model_tuning(X_train, X_test, y_train, y_test):
             columns=['Predicted Negative', 'Predicted Positive']
         )
 
-        plt.figure(figrid_searchize=(5, 4))
+        plt.figure(figsize=(5, 4))
         sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
         plt.title('Confusion Matrix for adaboost Tuned', fontweight='bold', pad=10)
         plt.xlabel('Actual', fontweight='bold')
