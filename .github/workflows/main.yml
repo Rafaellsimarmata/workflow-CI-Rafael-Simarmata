@@ -1,0 +1,94 @@
+name: Fraud Detection CI/CD
+
+on:
+  # Trigger when there is a change or push to the main branch
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Trigger manually via GitHub Actions UI
+
+env:
+  MLFLOW_TRACKING_URL: ${{secrets.MLFLOW_TRACKING_URL}}
+  MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+  MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }} 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: development
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.12.7
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.7'
+
+      - name: Check Environment
+        run: |
+          python --version
+          pip list
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run MLflow Project
+        env:
+          MLFLOW_TRACKING_URL: ${{secrets.MLFLOW_TRACKING_URL}}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        working-directory: MLProject
+        run: |
+          python modelling.py --data_path fraud_detection_processed.csv --tuning
+
+      - name: Get Latest MLflow run_id
+        working-directory: MLProject/models_tuned/
+        run: |
+          RUN_ID=$(cat best_tuned_model_run_id.txt)
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id: $RUN_ID"
+          
+      - name: Install Python Dependencies
+        run: |
+          pip install docker
+
+      - name: Upload to GitHub Artifacts
+        if: env.RUN_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: fraud-detection-model-${{ env.RUN_ID }}
+          path: MLProject/models_tuned/
+          retention-days: 90
+
+      - name: Build Docker Model
+        if: env.RUN_ID != ''
+        env:
+          DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
+        run: |
+          echo "Using RUN_ID=${{ env.RUN_ID }}"
+          mlflow models build-docker --model-uri "runs:/$RUN_ID/model" --name "fraud_detection"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Tag Docker Image
+        run: |
+          docker tag fraud-detection:latest ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:${{ env.RUN_ID }}
+          docker tag fraud-detection:latefraud detection secrets.DOCKER_HUB_USERNAME }}/fraud-detection:latest
+
+      - name: Push Docker Image
+        run: 
+        |
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:${{ env.RUN_ID }}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fraud-detection:latest
