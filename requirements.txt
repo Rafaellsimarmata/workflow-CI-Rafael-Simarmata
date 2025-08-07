@@ -10,3 +10,5 @@ scikit-learn
 seaborn
 xgboost
 virtualenv
+psutil
+prometheus_client
