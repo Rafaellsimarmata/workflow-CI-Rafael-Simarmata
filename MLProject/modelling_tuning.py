@@ -40,15 +40,15 @@ def mlflow_setup():
         if mlflow_tracking_uri:
             mlflow.set_tracking_uri(mlflow_tracking_uri)
         else:
-            raise ValueError('Dagrid_searchHub MLflow Tracking URI must set on the environment.')
+            raise ValueError('DagsHub MLflow Tracking URI must set on the environment.')
         
-        mlflow.set_experiment('Fraud Pred Tuned CI')
-        logger.info('MLflow setup for Dagrid_searchHub completed.')
+        mlflow.set_experiment('Fraud Detection Tuned CI')
+        logger.info('MLflow setup for DagsHub completed.')
         
     except Exception as e:
-        logger.exception(f'MLflow setup for Dagrid_searchHub failed: {e}.')
+        logger.exception(f'MLflow setup for DagsHub failed: {e}. Starting MLFLOW locally')
         mlflow.set_tracking_uri('http://127.0.0.1:5000')
-        mlflow.set_experiment('Fraud Pred Tuned CI')
+        mlflow.set_experiment('Fraud Detection Tuned CI')
         logger.info('MLflow setup locally completed.')
 
 def load_data(data_path = "fraud_detection_processed.csv"):
@@ -73,22 +73,94 @@ def model_evaluate(model, X_test, y_test):
     tn, fp, fn, tp = cm.ravel()
 
     metrics = {
-        'accuracy': accuracy_score(y_test, y_pred),     # Overall correctness of the model
-        'precision': precision_score(y_test, y_pred),   # Trustworthiness of "positive" predictions
-        'recall': recall_score(y_test, y_pred),         # AKA sensitivity; How well the model identifies fraud
-        'f1_score': f1_score(y_test, y_pred),           # Balance between precision and recall
+        'accuracy': accuracy_score(y_test, y_pred),     
+        'precision': precision_score(y_test, y_pred), 
+        'recall': recall_score(y_test, y_pred),        
+        'f1_score': f1_score(y_test, y_pred),           
         'cm_true_negative': tn,
         'cm_false_positive': fp,
         'cm_false_negative': fn,
         'cm_true_positive': tp,
-        'tnr': tn / (tn + fp) if (tn + fp) != 0 else 0, # AKA specificity; How well the model identifies non-fraud ()
-        'fnr': fn / (fn + tp) if (fn + tp) != 0 else 0, # AKA miss-rate; How well the model fails to identify fraud (track underdiagnosis)
-        'fpr': fp / (fp + tn) if (fp + tn) != 0 else 0, # AKA fall-out; How well the model fails to identifies non-fraud as fraud (track overdiagnose fraud)
     }
 
     logger.info(f"Model {model} evaluated. Accuracy: {metrics['accuracy']:.4f}.")
 
     return metrics, cm
+
+def mlflow_tracking(best_params, metrics, cm, model_name, X_train, best_model):
+    with mlflow.start_run(run_name=f'{model_name}_tuned_run_ci') as run:
+        for param, value in best_params.items():
+            mlflow.log_param(param, value)
+        logger.info('Param logged to MLflow.')
+        
+        for metric, value in metrics.items():
+            mlflow.log_metric(metric, value)
+        logger.info('Metrics logged to MLflow.')
+
+        cm_df = pd.DataFrame(
+            cm, index=['Actual Negative', 'Actual Positive'],
+            columns=['Predicted Negative', 'Predicted Positive']
+        )
+
+        plt.figure(figsize=(5, 4))
+        sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
+        plt.title(f'Confusion Matrix for {model_name} Tuned', fontweight='bold', pad=10)
+        plt.xlabel('Actual', fontweight='bold')
+        plt.ylabel('Predicted', fontweight='bold')
+        plt.tight_layout()
+        cm_plot_path = f'models_tuned/{model_name}_tuned_confusion_matrix.png'
+        os.makedirs(os.path.dirname(cm_plot_path), exist_ok=True)
+        plt.savefig(cm_plot_path)
+        mlflow.log_artifact(cm_plot_path)
+        plt.close()
+        logger.info('Confusion matrix logged as PNG to MLflow.')
+
+        importance_df = pd.DataFrame({
+            'feature': X_train.columns,
+            'importance': best_model.feature_importances_
+        }).sort_values(by='importance', ascending=False)
+
+        importance_path = f'models_tuned/{model_name}_tuned_feature_importance.csv'
+        importance_df.to_csv(importance_path, index=False)
+        mlflow.log_artifact(importance_path)
+
+        for feature, importance_value in zip(X_train.columns, best_model.feature_importances_):
+            mlflow.log_param(f'importance_{feature}', importance_value)
+        logger.info('Feature importance logged to MLflow.')
+
+        metrics_cleaned = {}
+
+        for key, value in metrics.items():
+            if isinstance(value, np.floating):
+                metrics_cleaned[key] = float(value)
+            elif isinstance(value, np.integer):
+                metrics_cleaned[key] = int(value)
+            else: 
+                metrics_cleaned[key] = value
+
+        metrics_path = f'models_tuned/{model_name}_tuned_metrics.json'
+        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics_cleaned, f, indent=4)
+        mlflow.log_artifact(metrics_path)
+        logger.info('Metrics saved and logged to MLflow.')
+
+        mlflow.sklearn.log_model(
+            best_model, 'model',
+            input_example=X_train.head(),
+            signature=infer_signature(X_train, best_model.predict(X_train))
+        )
+
+        model_path = f'models_tuned/{model_name}_tuned_model.pkl'
+        os.makedirs(os.path.dirname(model_path), exist_ok=True)
+        joblib.dump(best_model, model_path)
+        mlflow.log_artifact(model_path)
+        logger.info(f'{model_name} model logged to MLflow.')
+
+        run_id = run.info.run_id
+        logger.info(f'{model_name} model tuning completed.')
+
+        return run_id
 
 
 def xgboost_model_tuning(X_train, X_test, y_train, y_test):
@@ -122,73 +194,7 @@ def xgboost_model_tuning(X_train, X_test, y_train, y_test):
     metrics, cm = model_evaluate(best_model, X_test, y_test)
     logger.info(f"Xgboost model accuracy: {metrics['accuracy']:.4f}")
 
-    with mlflow.start_run(run_name='xgb_tuned_run_ci') as run:
-        for param, value in best_params.items():
-            mlflow.log_param(param, value)
-        logger.info('Param logged to MLflow.')
-        
-        for metric, value in metrics.items():
-            mlflow.log_metric(metric, value)
-        logger.info('Metrics logged to MLflow.')
-
-        cm_df = pd.DataFrame(
-            cm, index=['Actual Negative', 'Actual Positive'],
-            columns=['Predicted Negative', 'Predicted Positive']
-        )
-
-        plt.figure(figsize=(5, 4))
-        sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
-        plt.title('Confusion Matrix for xgb Tuned', fontweight='bold', pad=10)
-        plt.xlabel('Actual', fontweight='bold')
-        plt.ylabel('Predicted', fontweight='bold')
-        plt.tight_layout()
-        cm_plot_path = 'models_tuned/xgb_tuned_confusion_matrix.png'
-        os.makedirs(os.path.dirname(cm_plot_path), exist_ok=True)
-        plt.savefig(cm_plot_path)
-        mlflow.log_artifact(cm_plot_path)
-        plt.close()
-        logger.info('Confusion matrix logged as PNG to MLflow.')
-
-        importance_df = pd.DataFrame({
-            'feature': X_train.columns,
-            'importance': best_model.feature_importances_
-        }).sort_values(by='importance', ascending=False)
-
-        importance_path = 'models_tuned/xgb_tuned_feature_importance.csv'
-        importance_df.to_csv(importance_path, index=False)
-        mlflow.log_artifact(importance_path)
-
-        for feature, importance_value in zip(X_train.columns, best_model.feature_importances_):
-            mlflow.log_param(f'importance_{feature}', importance_value)
-        logger.info('Feature importance logged to MLflow.')
-
-        metrics_cleaned = {
-            k: float(v) if isinstance(v, np.floating)
-            else int(v) if isinstance(v, np.integer)
-            else v for k, v in metrics.items()
-        }
-
-        metrics_path = 'models_tuned/xgb_tuned_metrics.json'
-        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
-        with open(metrics_path, 'w') as f:
-            json.dump(metrics_cleaned, f, indent=4)
-        mlflow.log_artifact(metrics_path)
-        logger.info('Metrics saved and logged to MLflow.')
-
-        mlflow.sklearn.log_model(
-            best_model, 'model',
-            input_example=X_train.head(),
-            signature=infer_signature(X_train, best_model.predict(X_train))
-        )
-
-        model_path = 'models_tuned/xgb_tuned_model.pkl'
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        joblib.dump(best_model, model_path)
-        mlflow.log_artifact(model_path)
-        logger.info('Xgboost model logged to MLflow.')
-
-        run_id = run.info.run_id
-        logger.info('Xgboost model tuning completed.')
+    run_id = mlflow_tracking(best_params, metrics, cm, "Xgboost", X_train, best_model)
 
     return best_model, metrics, cm, run_id
 
@@ -219,73 +225,7 @@ def rf_model_tuning(X_train, X_test, y_train, y_test):
     metrics, cm = model_evaluate(best_model, X_test, y_test)
     logger.info(f"Random Forest model accuracy: {metrics['accuracy']:.4f}")
 
-    with mlflow.start_run(run_name='rf_tuned_run_ci') as run:
-        for param, value in best_params.items():
-            mlflow.log_param(param, value)
-        logger.info('Param logged to MLflow.')
-        
-        for metric, value in metrics.items():
-            mlflow.log_metric(metric, value)
-        logger.info('Metrics logged to MLflow.')
-
-        cm_df = pd.DataFrame(
-            cm, index=['Actual Negative', 'Actual Positive'],
-            columns=['Predicted Negative', 'Predicted Positive']
-        )
-
-        plt.figure(figsize=(5, 4))
-        sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
-        plt.title('Confusion Matrix for rf Tuned', fontweight='bold', pad=10)
-        plt.xlabel('Actual', fontweight='bold')
-        plt.ylabel('Predicted', fontweight='bold')
-        plt.tight_layout()
-        cm_plot_path = 'models_tuned/rf_tuned_confusion_matrix.png'
-        os.makedirs(os.path.dirname(cm_plot_path), exist_ok=True)
-        plt.savefig(cm_plot_path)
-        mlflow.log_artifact(cm_plot_path)
-        plt.close()
-        logger.info('Confusion matrix logged as PNG to MLflow.')
-
-        importance_df = pd.DataFrame({
-            'feature': X_train.columns,
-            'importance': best_model.feature_importances_
-        }).sort_values(by='importance', ascending=False)
-
-        importance_path = 'models_tuned/rf_tuned_feature_importance.csv'
-        importance_df.to_csv(importance_path, index=False)
-        mlflow.log_artifact(importance_path)
-
-        for feature, importance_value in zip(X_train.columns, best_model.feature_importances_):
-            mlflow.log_param(f'importance_{feature}', importance_value)
-        logger.info('Feature importance logged to MLflow.')
-
-        metrics_cleaned = {
-            k: float(v) if isinstance(v, np.floating)
-            else int(v) if isinstance(v, np.integer)
-            else v for k, v in metrics.items()
-        }
-
-        metrics_path = 'models_tuned/rf_tuned_metrics.json'
-        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
-        with open(metrics_path, 'w') as f:
-            json.dump(metrics_cleaned, f, indent=4)
-        mlflow.log_artifact(metrics_path)
-        logger.info('Metrics saved and logged to MLflow.')
-
-        mlflow.sklearn.log_model(
-            best_model, 'model',
-            input_example=X_train.head(),
-            signature=infer_signature(X_train, best_model.predict(X_train))
-        )
-
-        model_path = 'models_tuned/rf_tuned_model.pkl'
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        joblib.dump(best_model, model_path)
-        mlflow.log_artifact(model_path)
-        logger.info('Random Forest model logged to MLflow.')
-
-        run_id = run.info.run_id
-        logger.info('Random Forest model tuning completed.')
+    run_id = mlflow_tracking(best_params, metrics, cm, "RandomForest", X_train, best_model)
 
     return best_model, metrics, cm, run_id
 
@@ -317,73 +257,7 @@ def adaboost_model_tuning(X_train, X_test, y_train, y_test):
     metrics, cm = model_evaluate(best_model, X_test, y_test)
     logger.info(f"AdaBoost model accuracy: {metrics['accuracy']:.4f}")
 
-    with mlflow.start_run(run_name='adaboost_tuned_run_ci') as run:
-        for param, value in best_params.items():
-            mlflow.log_param(param, value)
-        logger.info('Param logged to MLflow.')
-        
-        for metric, value in metrics.items():
-            mlflow.log_metric(metric, value)
-        logger.info('Metrics logged to MLflow.')
-
-        cm_df = pd.DataFrame(
-            cm, index=['Actual Negative', 'Actual Positive'],
-            columns=['Predicted Negative', 'Predicted Positive']
-        )
-
-        plt.figure(figsize=(5, 4))
-        sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
-        plt.title('Confusion Matrix for adaboost Tuned', fontweight='bold', pad=10)
-        plt.xlabel('Actual', fontweight='bold')
-        plt.ylabel('Predicted', fontweight='bold')
-        plt.tight_layout()
-        cm_plot_path = 'models_tuned/adaboost_tuned_confusion_matrix.png'
-        os.makedirs(os.path.dirname(cm_plot_path), exist_ok=True)
-        plt.savefig(cm_plot_path)
-        mlflow.log_artifact(cm_plot_path)
-        plt.close()
-        logger.info('Confusion matrix logged as PNG to MLflow.')
-
-        importance_df = pd.DataFrame({
-            'feature': X_train.columns,
-            'importance': best_model.feature_importances_
-        }).sort_values(by='importance', ascending=False)
-
-        importance_path = 'models_tuned/adaboost_tuned_feature_importance.csv'
-        importance_df.to_csv(importance_path, index=False)
-        mlflow.log_artifact(importance_path)
-
-        for feature, importance_value in zip(X_train.columns, best_model.feature_importances_):
-            mlflow.log_param(f'importance_{feature}', importance_value)
-        logger.info('Feature importance logged to MLflow.')
-
-        metrics_cleaned = {
-            k: float(v) if isinstance(v, np.floating)
-            else int(v) if isinstance(v, np.integer)
-            else v for k, v in metrics.items()
-        }
-
-        metrics_path = 'models_tuned/adaboost_tuned_metrics.json'
-        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
-        with open(metrics_path, 'w') as f:
-            json.dump(metrics_cleaned, f, indent=4)
-        mlflow.log_artifact(metrics_path)
-        logger.info('Metrics saved and logged to MLflow.')
-
-        mlflow.sklearn.log_model(
-            best_model, 'model',
-            input_example=X_train.head(),
-            signature=infer_signature(X_train, best_model.predict(X_train))
-        )
-
-        model_path = 'models_tuned/adaboost_tuned_model.pkl'
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        joblib.dump(best_model, model_path)
-        mlflow.log_artifact(model_path)
-        logger.info('AdaBoost model logged to MLflow.')
-
-        run_id = run.info.run_id
-        logger.info('AdaBoost model tuning completed.')
+    run_id = mlflow_tracking(best_params, metrics, cm, "Adaboost", X_train, best_model)
 
     return best_model, metrics, cm, run_id
 

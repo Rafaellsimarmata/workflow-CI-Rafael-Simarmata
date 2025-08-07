@@ -1,2 +1,4 @@
 .env
 .venv
+monitoring_and_loggin
+inference.py

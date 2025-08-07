@@ -42,11 +42,13 @@ def mlflow_setup():
         else:
             raise ValueError('DagsHub MLflow Tracking URI must set on the environment.')
         
+        mlflow.set_experiment('Fraud Detection CI')
         logger.info(f'MLflow setup for DagsHub {mlflow_tracking_uri} completed.')
         
     except Exception as e:
         logger.exception(f'MLflow setup for DagsHub failed: {e}.')
         mlflow.set_tracking_uri('http://127.0.0.1:5000')
+        mlflow.set_experiment('Fraud Detection CI')
         logger.info('MLflow setup locally completed.')
 
 def load_data(data_path):
@@ -114,6 +116,24 @@ def model_train(X_train, X_test, y_train, y_test, model_name, params=None):
         # Model evaluation
         metrics, cm = model_evaluate(model, X_test, y_test)
 
+        metrics_cleaned = {}
+
+        for key, value in metrics.items():
+            if isinstance(value, np.floating):
+                metrics_cleaned[key] = float(value)
+            elif isinstance(value, np.integer):
+                metrics_cleaned[key] = int(value)
+            else: 
+                metrics_cleaned[key] = value
+
+        metrics_path = f'models/{model_name}_metrics_cleaned.json'
+        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics_cleaned, f, indent=4)
+            
+        mlflow.log_artifact(metrics_path)
+        logger.info('Metrics artifacts saved and logged to MLflow.')
+
         # Cross-validation accuracy
         cv_accuracy = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy').mean()
         logger.info(f'Cross-validation accuracy: {cv_accuracy:.4f}')
@@ -122,55 +142,45 @@ def model_train(X_train, X_test, y_train, y_test, model_name, params=None):
         mlflow.log_metric('accuracy_crossval', cv_accuracy)
         logger.info('Metrics logged to MLflow.')
 
+       # Create DataFrame for confusion matrix with proper orientation
         cm_df = pd.DataFrame(
-            cm, index=['Actual Negative', 'Actual Positive'],
+            cm,
+            index=['Actual Negative', 'Actual Positive'],
             columns=['Predicted Negative', 'Predicted Positive']
         )
 
+        # Create and save confusion matrix plot
         plt.figure(figsize=(5, 4))
-        sns.heatmap(cm_df.T, annot=True, fmt='d', cmap='Blues')
+        sns.heatmap(cm_df, annot=True, fmt='d', cmap='Blues', cbar=False) 
         plt.title(f'Confusion Matrix for {model_name}', fontweight='bold', pad=10)
-        plt.xlabel('Actual', fontweight='bold')
-        plt.ylabel('Predicted', fontweight='bold')
+        plt.xlabel('Predicted', fontweight='bold') 
+        plt.ylabel('Actual', fontweight='bold')    
         plt.tight_layout()
-        
+
+        # Ensure directory exists and save plot
         cm_plot_path = f'models/{model_name}_confusion_matrix.png'
         os.makedirs(os.path.dirname(cm_plot_path), exist_ok=True)
-        plt.savefig(cm_plot_path)
-
-        mlflow.log_artifact(cm_plot_path)
+        plt.savefig(cm_plot_path, bbox_inches='tight', dpi=300)  # Added higher DPI and tight bounding box
         plt.close()
 
+        # Log artifacts
+        mlflow.log_artifact(cm_plot_path)
         logger.info('Confusion matrix logged as CSV and PNG to MLflow.')
 
-        if hasattr(model, 'feature_importances_'):
-            importance = pd.DataFrame({
-                'feature': X_train.columns,
-                'importance': model.feature_importances_,
-            }).sort_values(by='importance', ascending=False)
+        importance = pd.DataFrame({
+            'feature': X_train.columns,
+            'importance': model.feature_importances_,
+        }).sort_values(by='importance', ascending=False)
 
-            importance_path = f'models/{model_name}_feature_importance.csv'
-            os.makedirs(os.path.dirname(importance_path), exist_ok=True)
-            importance.to_csv(importance_path, index=False)
-            mlflow.log_artifact(importance_path)
+        importance_path = f'models/{model_name}_feature_importance.csv'
+        os.makedirs(os.path.dirname(importance_path), exist_ok=True)
+        importance.to_csv(importance_path, index=False)
+        mlflow.log_artifact(importance_path)
 
-            for feature, importance_value in zip(X_train.columns, model.feature_importances_):
-                mlflow.log_param(f'importance_{feature}', importance_value)
-            
-            logger.info('Feature importance logged to MLflow.')
-
-        metrics_cleaned = {
-            k: float(v) if isinstance(v, np.floating)
-            else int(v) if isinstance(v, np.integer)
-            else v for k, v in metrics.items()
-        }
-
-        metrics_path = f'models/{model_name}_metrics.json'
-        os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
-        with open(metrics_path, 'w') as f:
-            json.dump(metrics_cleaned, f, indent=4)
-        mlflow.log_artifact(metrics_path)
-        logger.info('Metrics saved and logged to MLflow.')
+        for feature, importance_value in zip(X_train.columns, model.feature_importances_):
+            mlflow.log_param(f'importance_{feature}', importance_value)
+        
+        logger.info('Feature importance logged to MLflow.')
         
         mlflow.sklearn.log_model(
             model,
